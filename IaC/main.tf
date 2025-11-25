@@ -12,12 +12,13 @@ frontend:
       commands: []
     build:
       commands: []
-  artifacts:
-    baseDirectory: website
-    files:  
-      - '**/*'
-  cache:
-    paths: []
+    cache:
+      paths: []
+artifacts:
+  baseDirectory: website
+  files:  
+    - '**/*'
+  
 EOF
 
   environment_variables = {
