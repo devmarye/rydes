@@ -10,13 +10,12 @@ resource "aws_amplify_app" "rydes" {
       phases:
         build:
           commands: []
-        cache:
-          paths: []
       artifacts:
         baseDirectory: website
         files:  
           - '**/*'
-      
+      cache:
+          paths: []
   EOT
 
   environment_variables = {
