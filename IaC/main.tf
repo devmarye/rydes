@@ -8,14 +8,12 @@ resource "aws_amplify_app" "rydes" {
 version: 1
 frontend:
   phases:
-    preBuild:
-      commands: []
     build:
       commands: []
     cache:
       paths: []
   artifacts:
-    baseDirectory: /website
+    baseDirectory: /website/
     files:  
       - '**/*'
   
