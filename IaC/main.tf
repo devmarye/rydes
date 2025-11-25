@@ -5,18 +5,13 @@ resource "aws_amplify_app" "rydes" {
 
   build_spec = <<-EOT
 version: 1
-frontend:
-  phases:
-    preBuild:
-      commands: []
-    build:
-      commands: []
-  artifacts:
-    baseDirectory: website
-    files:
-      - '**/*'
-  cache:
-    paths: []
+
+artifacts:
+  baseDirectory: website
+  files:
+    - '**/*'
+cache:
+  paths: []
 EOT
 
   environment_variables = {
