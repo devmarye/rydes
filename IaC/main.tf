@@ -15,7 +15,7 @@ frontend:
     cache:
       paths: []
   artifacts:
-    baseDirectory: website
+    baseDirectory: /website
     files:  
       - '**/*'
   
