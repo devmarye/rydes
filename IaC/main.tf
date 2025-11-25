@@ -1,27 +1,29 @@
 resource "aws_amplify_app" "rydes" {
-  name       = "rydes"
-  repository = "https://github.com/devmarye/rydes"
+  name        = "rydes"
+  repository  = "https://github.com/devmarye/rydes"
   access_token = var.github_token
 
-   # Build spec for website in subfolder
   build_spec = <<-EOT
-    version: 1
-    frontend:
-      phases:
-        build:
-          commands: []
-      artifacts:
-        baseDirectory: website
-        files:  
-          - '**/*'
-      cache:
-          paths: []
-  EOT
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands: []
+    build:
+      commands: []
+  artifacts:
+    baseDirectory: website
+    files:
+      - '**/*'
+  cache:
+    paths: []
+EOT
 
   environment_variables = {
     ENV = "prod"
   }
 }
+
 
 resource "aws_amplify_branch" "main" {
   app_id      = aws_amplify_app.rydes.id
