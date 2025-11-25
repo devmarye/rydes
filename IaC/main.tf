@@ -13,7 +13,8 @@ frontend:
     build:
       commands: []
   artifacts:
-    baseDirectory: website  
+    baseDirectory: website
+    files:  
       - '**/*'
   cache:
     paths: []
