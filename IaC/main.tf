@@ -4,7 +4,7 @@ resource "aws_amplify_app" "rydes" {
   access_token = var.github_token
 
    # Build spec for website in subfolder
- build_spec = <<EOF
+ build_spec = <<-EOT
 version: 1
 frontend:
   phases:
@@ -14,12 +14,12 @@ frontend:
       commands: []
     cache:
       paths: []
-artifacts:
-  baseDirectory: website
-  files:  
-    - '**/*'
+  artifacts:
+    baseDirectory: website
+    files:  
+      - '**/*'
   
-EOF
+EOT
 
   environment_variables = {
     ENV = "prod"
