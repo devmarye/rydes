@@ -142,7 +142,7 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
 
 data "archive_file" "requestRydes_code" {
   type        = "zip"
-  source_file = "${path.module}/lambda/requestRydes.js"
+  source_file = "${path.module}/lambda/requestRydes.mjs"
   output_path = "${path.module}/lambda/requestRydes.zip"
 }
 
