@@ -9,6 +9,7 @@
 crash.log
 crash.*.log
 
+/lambda/*.zip
 
 *.tfvars
 *.tfvars.json
