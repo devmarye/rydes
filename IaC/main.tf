@@ -83,8 +83,8 @@ resource "aws_cognito_user_pool_domain" "default_domain" {
   user_pool_id = aws_cognito_user_pool.main_pool.id
 }
 
-resource "aws_dynamodb_table" "rydes-table" {
-  name           = "rydes-table"
+resource "aws_dynamodb_table" "rydes_table" {
+  name           = "rydes_table"
   billing_mode   = "PAY_PER_REQUEST"
   hash_key       = "RideId"
 
@@ -124,7 +124,7 @@ resource "aws_iam_policy" "lambda_dynamodb_policy" {
         Action = [
           "dynamodb:PutItem"
         ]
-        Resource = aws_dynamodb_table.rydes-table.arn
+        Resource = aws_dynamodb_table.rydes_table.arn
       }
     ]
   })
@@ -154,4 +154,123 @@ resource "aws_lambda_function" "myfunc" {
   handler          =  "requestRydes.handler"
   runtime          = "nodejs18.x"
   
+  depends_on = [
+    aws_iam_role_policy_attachment.lambda_policy_attach,
+    aws_iam_role_policy_attachment.lambda_basic_execution
+  ]
+}
+
+resource "aws_api_gateway_rest_api" "rydes_api" {
+  name        = "rydes-api"
+  description = "API for requesting rides"
+}
+
+resource "aws_api_gateway_resource" "rides_resource" {
+  rest_api_id = aws_api_gateway_rest_api.rydes_api.id
+  parent_id   = aws_api_gateway_rest_api.rydes_api.root_resource_id
+  path_part   = "ride"
+}
+
+resource "aws_api_gateway_authorizer" "cognito_auth" {
+  name                   = "cognito-authorizer"
+  rest_api_id            = aws_api_gateway_rest_api.rydes_api.id
+  type                   = "COGNITO_USER_POOLS"
+  provider_arns          = [aws_cognito_user_pool.main_pool.arn]
+  identity_source        = "method.request.header.Authorization"
+}
+
+resource "aws_api_gateway_method" "post_rides" {
+  rest_api_id   = aws_api_gateway_rest_api.rydes_api.id
+  resource_id   = aws_api_gateway_resource.rides_resource.id
+  http_method   = "POST"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito_auth.id
+}
+
+resource "aws_api_gateway_integration" "rides_post_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.rydes_api.id
+  resource_id             = aws_api_gateway_resource.rides_resource.id
+  http_method             = aws_api_gateway_method.post_rides.http_method
+
+  integration_http_method = "POST"       # Required even for Lambda
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.myfunc.invoke_arn
+}
+
+resource "aws_lambda_permission" "allow_apigw_invoke" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.myfunc.arn
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_api_gateway_rest_api.rydes_api.execution_arn}/*/*"
+}
+
+resource "aws_api_gateway_method" "options_rides" {
+  rest_api_id = aws_api_gateway_rest_api.rydes_api.id
+  resource_id = aws_api_gateway_resource.rides_resource.id
+  http_method = "OPTIONS"
+  authorization = "NONE"
+}
+resource "aws_api_gateway_method_response" "options_rides_response" {
+  rest_api_id = aws_api_gateway_rest_api.rydes_api.id
+  resource_id = aws_api_gateway_resource.rides_resource.id
+  http_method = "OPTIONS"
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration" "options_rides_integration" {
+  rest_api_id = aws_api_gateway_rest_api.rydes_api.id
+  resource_id = aws_api_gateway_resource.rides_resource.id
+  http_method = aws_api_gateway_method.options_rides.http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+
+
+resource "aws_api_gateway_deployment" "rydes_deployment" {
+  depends_on = [
+    aws_api_gateway_integration.rides_post_integration,
+    aws_api_gateway_integration.options_rides_integration
+  ]
+
+  rest_api_id = aws_api_gateway_rest_api.rydes_api.id
+}
+
+resource "aws_api_gateway_stage" "dev_stage" {
+  deployment_id = aws_api_gateway_deployment.rydes_deployment.id
+  rest_api_id   = aws_api_gateway_rest_api.rydes_api.id
+  stage_name    = "dev"
+}
+resource "aws_api_gateway_integration_response" "options_rides_integration_response" {
+  rest_api_id = aws_api_gateway_rest_api.rydes_api.id
+  resource_id = aws_api_gateway_resource.rides_resource.id
+  http_method = aws_api_gateway_method.options_rides.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+    "method.response.header.Access-Control-Allow-Methods" = "'OPTIONS,POST'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
+
+  depends_on = [aws_api_gateway_method_response.options_rides_response]
+
+  response_templates = {
+    "application/json" = ""
+  }
+}
+
+output "api_invoke_url" {
+  value = "https://${aws_api_gateway_rest_api.rydes_api.id}.execute-api.ca-central-1.amazonaws.com/dev"
 }
