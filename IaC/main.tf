@@ -192,7 +192,7 @@ resource "aws_api_gateway_integration" "rides_post_integration" {
   resource_id             = aws_api_gateway_resource.rides_resource.id
   http_method             = aws_api_gateway_method.post_rides.http_method
 
-  integration_http_method = "POST"       # Required even for Lambda
+  integration_http_method = "POST"      
   type                    = "AWS_PROXY"
   uri                     = aws_lambda_function.myfunc.invoke_arn
 }
@@ -236,22 +236,6 @@ resource "aws_api_gateway_integration" "options_rides_integration" {
   }
 }
 
-
-
-resource "aws_api_gateway_deployment" "rydes_deployment" {
-  depends_on = [
-    aws_api_gateway_integration.rides_post_integration,
-    aws_api_gateway_integration.options_rides_integration
-  ]
-
-  rest_api_id = aws_api_gateway_rest_api.rydes_api.id
-}
-
-resource "aws_api_gateway_stage" "dev_stage" {
-  deployment_id = aws_api_gateway_deployment.rydes_deployment.id
-  rest_api_id   = aws_api_gateway_rest_api.rydes_api.id
-  stage_name    = "dev"
-}
 resource "aws_api_gateway_integration_response" "options_rides_integration_response" {
   rest_api_id = aws_api_gateway_rest_api.rydes_api.id
   resource_id = aws_api_gateway_resource.rides_resource.id
@@ -269,6 +253,47 @@ resource "aws_api_gateway_integration_response" "options_rides_integration_respo
   response_templates = {
     "application/json" = ""
   }
+}
+
+resource "aws_api_gateway_method_response" "post_rides_response" {
+  rest_api_id = aws_api_gateway_rest_api.rydes_api.id
+  resource_id = aws_api_gateway_resource.rides_resource.id
+  http_method = aws_api_gateway_method.post_rides.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = true
+  }
+}
+
+
+resource "aws_api_gateway_integration_response" "post_rides_integration_response" {
+  rest_api_id = aws_api_gateway_rest_api.rydes_api.id
+  resource_id = aws_api_gateway_resource.rides_resource.id
+  http_method = aws_api_gateway_method.post_rides.http_method
+  status_code = aws_api_gateway_method_response.post_rides_response.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = "'*'"
+  }
+
+  depends_on = [aws_api_gateway_method_response.post_rides_response]
+}
+
+
+resource "aws_api_gateway_deployment" "rydes_deployment" {
+  depends_on = [
+    aws_api_gateway_integration.rides_post_integration,
+    aws_api_gateway_integration.options_rides_integration
+  ]
+
+  rest_api_id = aws_api_gateway_rest_api.rydes_api.id
+}
+
+resource "aws_api_gateway_stage" "dev_stage" {
+  deployment_id = aws_api_gateway_deployment.rydes_deployment.id
+  rest_api_id   = aws_api_gateway_rest_api.rydes_api.id
+  stage_name    = "dev"
 }
 
 output "api_invoke_url" {
