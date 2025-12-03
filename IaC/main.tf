@@ -282,6 +282,10 @@ resource "aws_api_gateway_integration_response" "post_rides_integration_response
   }
 
   depends_on = [aws_api_gateway_method_response.post_rides_response]
+
+  response_templates = {
+    "application/json" = ""
+  }
 }
 
 
@@ -292,6 +296,7 @@ resource "aws_api_gateway_deployment" "rydes_deployment" {
   ]
 
   rest_api_id = aws_api_gateway_rest_api.rydes_api.id
+  
 }
 
 resource "aws_api_gateway_stage" "dev_stage" {
