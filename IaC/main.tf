@@ -223,6 +223,10 @@ resource "aws_api_gateway_method_response" "options_rides_response" {
     "method.response.header.Access-Control-Allow-Methods" = true
     "method.response.header.Access-Control-Allow-Origin"  = true
   }
+
+  depends_on = [
+    aws_api_gateway_method.options_rides
+  ]
 }
 
 resource "aws_api_gateway_integration" "options_rides_integration" {
@@ -296,6 +300,4 @@ resource "aws_api_gateway_stage" "dev_stage" {
   stage_name    = "dev"
 }
 
-output "api_invoke_url" {
-  value = "https://${aws_api_gateway_rest_api.rydes_api.id}.execute-api.ca-central-1.amazonaws.com/dev"
-}
+
